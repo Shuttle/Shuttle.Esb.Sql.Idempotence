@@ -10,6 +10,9 @@ namespace Shuttle.Esb.Sql.Idempotence
 
 			registry.AttemptRegister<IScriptProviderConfiguration, ScriptProviderConfiguration>();
 			registry.AttemptRegister<IScriptProvider, ScriptProvider>();
+
+			registry.AttemptRegister<IIdempotenceConfiguration>(IdempotenceSection.Configuration());
+			registry.AttemptRegister<IIdempotenceService, IdempotenceService>();
 		}
 	}
 }

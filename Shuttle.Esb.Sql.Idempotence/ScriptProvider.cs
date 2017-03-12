@@ -15,7 +15,7 @@ namespace Shuttle.Esb.Sql.Idempotence
 				ResourceNameFormat = string.IsNullOrEmpty(configuration.ResourceNameFormat)
 					? "Shuttle.Esb.Sql.Idempotence..scripts.{ProviderName}.{ScriptName}.sql"
 					: configuration.ResourceNameFormat,
-				ResourceAssembly = configuration.ResourceAssembly ?? typeof(SqlQueue).Assembly,
+				ResourceAssembly = configuration.ResourceAssembly ?? typeof(IdempotenceService).Assembly,
 				FileNameFormat = configuration.FileNameFormat,
 				ScriptFolder = configuration.ScriptFolder
 			});
