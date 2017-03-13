@@ -9,7 +9,7 @@
 		<projectUrl>https://github.com/shuttle/Shuttle.Esb.Sql.Idempotence</projectUrl>
 		<iconUrl>https://raw.githubusercontent.com/Shuttle/Shuttle.Esb.Sql.Idempotence/master/.media/logo.png</iconUrl>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
-		<description>Microsoft Sql Server implementation for use with Shuttle.Esb.</description>
+    <description>Sql RDBMS implementation of the IIdempotence interface for use with Shuttle.Esb.</description>
 		<releaseNotes/>
 		<copyright>Copyright (c) {year}, Eben Roux</copyright>
 		<tags>shuttle-esb Shuttle.Esb.Sql.Idempotence sqlserver</tags>
