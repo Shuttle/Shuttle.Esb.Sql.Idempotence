@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Data.SqlClient;
 using System.IO;
 using System.Threading;
+using Shuttle.Core.Contract;
 using Shuttle.Core.Data;
-using Shuttle.Core.Infrastructure;
+using Shuttle.Core.Streams;
 
 namespace Shuttle.Esb.Sql.Idempotence
 {
@@ -34,7 +34,7 @@ namespace Shuttle.Esb.Sql.Idempotence
 
 		    if (!serviceBusConfiguration.HasInbox)
 		    {
-                throw new InvalidOperationException(IdempotenceResources.NoInboxException);
+                throw new InvalidOperationException(Resources.NoInboxException);
 		    }
 
 		    _scriptProvider = scriptProvider;
@@ -45,7 +45,7 @@ namespace Shuttle.Esb.Sql.Idempotence
 
             if (string.IsNullOrEmpty(_idempotenceProviderName))
             {
-                throw new ConfigurationErrorsException(string.Format(IdempotenceResources.ProviderNameEmpty,
+                throw new ApplicationException(string.Format(Resources.ProviderNameEmpty,
                     "IdempotenceService"));
             }
 
@@ -53,7 +53,7 @@ namespace Shuttle.Esb.Sql.Idempotence
 
 			if (string.IsNullOrEmpty(_idempotenceConnectionString))
 			{
-				throw new ConfigurationErrorsException(string.Format(IdempotenceResources.ConnectionStringEmpty,
+				throw new ApplicationException(string.Format(Resources.ConnectionStringEmpty,
 					"IdempotenceService"));
 			}
 
@@ -69,7 +69,7 @@ namespace Shuttle.Esb.Sql.Idempotence
                         _scriptProvider.Get(
                             Script.IdempotenceServiceExists))) != 1)
                 {
-                    throw new InvalidOperationException(IdempotenceResources.IdempotenceDatabaseNotConfigured);
+                    throw new InvalidOperationException(Resources.IdempotenceDatabaseNotConfigured);
                 }
 
                 _databaseGateway.ExecuteUsing(

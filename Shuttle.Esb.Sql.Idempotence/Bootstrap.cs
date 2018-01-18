@@ -1,4 +1,5 @@
-﻿using Shuttle.Core.Infrastructure;
+﻿using Shuttle.Core.Container;
+using Shuttle.Core.Contract;
 
 namespace Shuttle.Esb.Sql.Idempotence
 {
@@ -11,8 +12,12 @@ namespace Shuttle.Esb.Sql.Idempotence
 			registry.AttemptRegister<IScriptProviderConfiguration, ScriptProviderConfiguration>();
 			registry.AttemptRegister<IScriptProvider, ScriptProvider>();
 
-			registry.AttemptRegister<IIdempotenceConfiguration>(IdempotenceSection.Configuration());
-			registry.AttemptRegister<IIdempotenceService, IdempotenceService>();
+		    if (!registry.IsRegistered<IIdempotenceConfiguration>())
+		    {
+		        registry.RegisterInstance<IIdempotenceConfiguration>(IdempotenceSection.Configuration());
+		    }
+
+		    registry.AttemptRegister<IIdempotenceService, IdempotenceService>();
 		}
 	}
 }

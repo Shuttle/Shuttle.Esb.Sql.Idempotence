@@ -1,46 +1,43 @@
 ﻿using System;
 using System.Configuration;
-using Shuttle.Core.Infrastructure;
+using Shuttle.Core.Configuration;
 
 namespace Shuttle.Esb.Sql.Idempotence
 {
-	public class IdempotenceSection : ConfigurationSection
-	{
-		[ConfigurationProperty("connectionStringName", IsRequired = false,
-			DefaultValue = "Idempotence")]
-		public string ConnectionStringName
-		{
-			get { return (string) this["connectionStringName"]; }
-		}
+    public class IdempotenceSection : ConfigurationSection
+    {
+        [ConfigurationProperty("connectionStringName", IsRequired = false, DefaultValue = "Idempotence")]
+        public string ConnectionStringName => (string) this["connectionStringName"];
 
-		public static IdempotenceConfiguration Configuration()
-		{
-			var section = ConfigurationSectionProvider.Open<IdempotenceSection>("shuttle", "idempotence");
-			var configuration = new IdempotenceConfiguration();
+        public static IdempotenceConfiguration Configuration()
+        {
+            var section = ConfigurationSectionProvider.Open<IdempotenceSection>("shuttle", "idempotence");
+            var configuration = new IdempotenceConfiguration();
 
-			var connectionStringName = "Idempotence";
+            var connectionStringName = "Idempotence";
 
-			if (section != null)
-			{
-				connectionStringName = section.ConnectionStringName;
-			}
+            if (section != null)
+            {
+                connectionStringName = section.ConnectionStringName;
+            }
 
-			configuration.ProviderName = GetSettings(connectionStringName).ProviderName;
-			configuration.ConnectionString = GetSettings(connectionStringName).ConnectionString;
+            configuration.ProviderName = GetSettings(connectionStringName).ProviderName;
+            configuration.ConnectionString = GetSettings(connectionStringName).ConnectionString;
 
-			return configuration;
-		}
+            return configuration;
+        }
 
-		private static ConnectionStringSettings GetSettings(string connectionStringName)
-		{
-			var settings = ConfigurationManager.ConnectionStrings[connectionStringName];
+        private static ConnectionStringSettings GetSettings(string connectionStringName)
+        {
+            var settings = ConfigurationManager.ConnectionStrings[connectionStringName];
 
-			if (settings == null)
-			{
-				throw new InvalidOperationException(string.Format(IdempotenceResources.ConnectionStringMissing, connectionStringName));
-			}
+            if (settings == null)
+            {
+                throw new InvalidOperationException(string.Format(Resources.ConnectionStringMissing,
+                    connectionStringName));
+            }
 
-			return settings;
-		}
-	}
+            return settings;
+        }
+    }
 }
