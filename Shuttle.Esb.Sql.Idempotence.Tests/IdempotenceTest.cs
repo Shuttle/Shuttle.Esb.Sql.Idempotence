@@ -1,7 +1,10 @@
-﻿using Castle.Windsor;
+﻿using System;
+using System.Transactions;
+using Castle.Windsor;
 using NUnit.Framework;
 using Shuttle.Core.Container;
 using Shuttle.Core.Castle;
+using Shuttle.Core.Transactions;
 using Shuttle.Esb.Tests;
 
 namespace Shuttle.Esb.Sql.Idempotence.Tests
@@ -24,9 +27,10 @@ namespace Shuttle.Esb.Sql.Idempotence.Tests
                 ConnectionString = "Data Source=.\\sqlexpress;Initial Catalog=shuttle;Integrated Security=SSPI;"
             });
 
+            container.RegisterInstance<ITransactionScopeFactory>(new DefaultTransactionScopeFactory(false, IsolationLevel.Unspecified, TimeSpan.Zero));
+
             TestIdempotenceProcessing(new ComponentContainer(container, () => container), @"sql://shuttle/{0}",
-                isTransactionalEndpoint,
-                enqueueUniqueMessages);
+                isTransactionalEndpoint, enqueueUniqueMessages);
         }
     }
 }

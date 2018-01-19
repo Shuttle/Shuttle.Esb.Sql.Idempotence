@@ -10,7 +10,7 @@
     <projectUrl>https://github.com/shuttle/Shuttle.Esb.Sql.Idempotence</projectUrl>
     <iconUrl>https://raw.githubusercontent.com/Shuttle/Shuttle.Esb.Sql.Idempotence/master/.media/logo.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description></description>
+    <description>Sql-based implementation of IIdempotenceService interface for use with Shuttle.Esb.</description>
     <releaseNotes />
     <copyright>Copyright (c) {year}, Eben Roux</copyright>
     <tags>shuttle</tags>

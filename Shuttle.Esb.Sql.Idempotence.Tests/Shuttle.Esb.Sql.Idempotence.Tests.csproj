@@ -28,4 +28,8 @@
         </None>
     </ItemGroup>
 
+    <ItemGroup>
+        <Reference Include="System.Transactions" Condition="'$(TargetFramework)' != 'netstandard2.0'" />
+    </ItemGroup>
+
 </Project>
