@@ -5,7 +5,6 @@ using Shuttle.Core.Data;
 using Shuttle.Esb.Sql.Idempotence;
 #if (NETCOREAPP2_0 || NETSTANDARD2_0)
 using Shuttle.Core.Data.SqlClient;
-
 #endif
 
 namespace Shuttle.Esb.Sql.Subscription.Tests

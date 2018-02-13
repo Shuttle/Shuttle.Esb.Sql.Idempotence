@@ -46,12 +46,15 @@
 	<Target Name="Package" DependsOnTargets="SemanticVersion;Build">
 		<ItemGroup>
 			<NugetBinaries Include="..\bin\debug\**\$(PackageName).dll" />
+		  <Scripts Include="..\.scripts\**\IdempotenceServiceCreate.sql" />
 		</ItemGroup>
 
 		<Copy SourceFiles="package.nuspec" DestinationFolder="$(DeploymentFolder)\nuget\" SkipUnchangedFiles="false" />
 		<Copy SourceFiles="@(NugetBinaries)" DestinationFolder="$(DeploymentFolder)\nuget\lib\%(RecursiveDir)" SkipUnchangedFiles="false" />
+	  <Copy SourceFiles="@(Scripts)"
+	        DestinationFolder="$(DeploymentFolder)\nuget\scripts\%(RecursiveDir)" SkipUnchangedFiles="false" />
 
-		<RegexFindAndReplace Files="$(DeploymentFolder)\nuget\package.nuspec" FindExpression="\{semver\}" ReplacementText="$(SemanticVersion)" />
+    <RegexFindAndReplace Files="$(DeploymentFolder)\nuget\package.nuspec" FindExpression="\{semver\}" ReplacementText="$(SemanticVersion)" />
 		<RegexFindAndReplace Files="$(DeploymentFolder)\nuget\package.nuspec" FindExpression="\{year\}" ReplacementText="$([System.DateTime]::Now.ToString(`yyyy`))" />
 		<SetNugetPackageVersions Files="$(DeploymentFolder)\nuget\package.nuspec" ProjectFile="..\$(PackageName).csproj" />
 
