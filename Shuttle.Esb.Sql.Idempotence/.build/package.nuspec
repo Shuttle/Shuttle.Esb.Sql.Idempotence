@@ -27,7 +27,7 @@
         <dependency id="System.Data.SqlClient" version="{System.Data.SqlClient-version}" />
       </group>
 
-      <group targetFramework="netcoreapp2.0">
+      <group targetFramework="netcoreapp2.1">
         <dependency id="Shuttle.Core.Data" version="{Shuttle.Core.Data-version}" />
         <dependency id="Shuttle.Esb" version="{Shuttle.Esb-version}" />
         <dependency id="System.Data.SqlClient" version="{System.Data.SqlClient-version}" />
