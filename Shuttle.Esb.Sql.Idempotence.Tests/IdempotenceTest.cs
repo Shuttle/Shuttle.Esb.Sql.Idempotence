@@ -27,8 +27,6 @@ namespace Shuttle.Esb.Sql.Idempotence.Tests
                 ConnectionString = "Data Source=.\\sqlexpress;Initial Catalog=shuttle;Integrated Security=SSPI;"
             });
 
-            container.RegisterInstance<ITransactionScopeFactory>(new DefaultTransactionScopeFactory(false, IsolationLevel.Unspecified, TimeSpan.Zero));
-
             TestIdempotenceProcessing(new ComponentContainer(container, () => container), @"sql://shuttle/{0}",
                 isTransactionalEndpoint, enqueueUniqueMessages);
         }

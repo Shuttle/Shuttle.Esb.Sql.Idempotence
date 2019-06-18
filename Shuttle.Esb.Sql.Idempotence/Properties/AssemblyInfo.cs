@@ -5,22 +5,6 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle(".NET Framework 4.6.1")]
 #endif
 
-#if NET462
-[assembly: AssemblyTitle(".NET Framework 4.6.2")]
-#endif
-
-#if NET47
-[assembly: AssemblyTitle(".NET Framework 4.7")]
-#endif
-
-#if NET471
-[assembly: AssemblyTitle(".NET Framework 4.7.1")]
-#endif
-
-#if NETCOREAPP2_0
-[assembly: AssemblyTitle(".NET Core 2.0")]
-#endif
-
 #if NETCOREAPP2_1
 [assembly: AssemblyTitle(".NET Core 2.1")]
 #endif
@@ -30,7 +14,7 @@ using System.Runtime.InteropServices;
 #endif
 
 [assembly: AssemblyVersion("10.0.1.0")]
-[assembly: AssemblyCopyright("Copyright © Eben Roux 2018")]
+[assembly: AssemblyCopyright("Copyright © Eben Roux 2019")]
 [assembly: AssemblyProduct("Shuttle.Esb.Sql.Idempotence")]
 [assembly: AssemblyCompany("Shuttle")]
 [assembly: AssemblyConfiguration("Release")]
