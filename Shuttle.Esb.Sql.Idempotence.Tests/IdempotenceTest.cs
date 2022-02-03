@@ -1,10 +1,11 @@
-﻿using System;
-using System.Transactions;
+﻿using System.Data.Common;
+using System.Data.SqlClient;
 using Castle.Windsor;
 using NUnit.Framework;
-using Shuttle.Core.Container;
 using Shuttle.Core.Castle;
-using Shuttle.Core.Transactions;
+using Shuttle.Core.Container;
+using Shuttle.Core.Data;
+using Shuttle.Esb.Sql.Queue;
 using Shuttle.Esb.Tests;
 
 namespace Shuttle.Esb.Sql.Idempotence.Tests
@@ -24,9 +25,16 @@ namespace Shuttle.Esb.Sql.Idempotence.Tests
             container.RegisterInstance<IIdempotenceConfiguration>(new IdempotenceConfiguration
             {
                 ProviderName = "System.Data.SqlClient",
-                ConnectionString = "Data Source=.\\sqlexpress;Initial Catalog=shuttle;Integrated Security=SSPI;"
+                ConnectionString = "server=.;database=shuttle;user id=sa;password=Pass!000"
             });
 
+            container.Register<IConnectionConfigurationProvider, ConnectionConfigurationProvider>();
+            container.RegisterSqlQueue();
+            container.RegisterIdempotence();
+            container.RegisterDataAccess();
+
+            DbProviderFactories.RegisterFactory("System.Data.SqlClient", SqlClientFactory.Instance);
+            
             TestIdempotenceProcessing(new ComponentContainer(container, () => container), @"sql://shuttle/{0}",
                 isTransactionalEndpoint, enqueueUniqueMessages);
         }

@@ -1,17 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>netcoreapp2.1;net461</TargetFrameworks>
+        <TargetFrameworks>net5.0</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.1.1" />
-        <PackageReference Include="NUnit" Version="3.12.0" />
-        <PackageReference Include="NUnit3TestAdapter" Version="3.13.0" />
-        <PackageReference Include="Shuttle.Core.Castle" Version="10.0.5" />
-        <PackageReference Include="Shuttle.Esb.Sql.Queue" Version="11.0.0" />
-        <PackageReference Include="Shuttle.Esb.Tests" Version="11.0.0" />
-        <PackageReference Include="Shuttle.Core.Data" Version="11.0.1" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
+        <PackageReference Include="NUnit" Version="3.13.2" />
+        <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
+        <PackageReference Include="Shuttle.Core.Castle" Version="10.1.0" />
+        <PackageReference Include="Shuttle.Esb.Sql.Queue" Version="12.0.0" />
+        <PackageReference Include="Shuttle.Esb.Tests" Version="12.0.0" />
+        <PackageReference Include="Shuttle.Core.Data" Version="12.0.0" />
+        <PackageReference Include="System.Data.SqlClient" Version="4.8.3" />
     </ItemGroup>
 
     <ItemGroup>
@@ -27,8 +28,7 @@
         </None>
     </ItemGroup>
 
-    <ItemGroup>
-        <Reference Include="System.Transactions" Condition="'$(TargetFramework)' != 'netstandard2.0' and '$(TargetFramework)' != 'netcoreapp2.1'" />
-    </ItemGroup>
-
+    <Target Name="ReSharperTestRunner" AfterTargets="AfterBuild">
+        <Copy SourceFiles="App.config" DestinationFiles="$(OutDir)\ReSharperTestRunner.dll.config" />
+    </Target>
 </Project>
