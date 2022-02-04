@@ -20,6 +20,8 @@ namespace Shuttle.Esb.Sql.Idempotence.Tests
         [TestCase(true, true)]
         public void Should_be_able_to_perform_full_processing(bool isTransactionalEndpoint, bool enqueueUniqueMessages)
         {
+            DbProviderFactories.RegisterFactory("System.Data.SqlClient", SqlClientFactory.Instance);
+
             var container = new WindsorComponentContainer(new WindsorContainer());
 
             container.RegisterInstance<IIdempotenceConfiguration>(new IdempotenceConfiguration
@@ -33,8 +35,6 @@ namespace Shuttle.Esb.Sql.Idempotence.Tests
             container.RegisterIdempotence();
             container.RegisterDataAccess();
 
-            DbProviderFactories.RegisterFactory("System.Data.SqlClient", SqlClientFactory.Instance);
-            
             TestIdempotenceProcessing(new ComponentContainer(container, () => container), @"sql://shuttle/{0}",
                 isTransactionalEndpoint, enqueueUniqueMessages);
         }
