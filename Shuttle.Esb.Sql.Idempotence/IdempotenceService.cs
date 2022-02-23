@@ -138,7 +138,7 @@ namespace Shuttle.Esb.Sql.Idempotence
 					}
 				}
 			}
-			catch (SqlException ex)
+			catch (Exception ex)
 			{
 				var message = ex.Message.ToUpperInvariant();
 

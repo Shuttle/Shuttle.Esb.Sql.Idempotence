@@ -12,12 +12,11 @@
 		<repository type="git" url="https://github.com/Shuttle/Shuttle.Esb.Sql.Idempotence.git" />
 		<projectUrl>https://github.com/Shuttle/Shuttle.Esb.Sql.Idempotence</projectUrl>
 		<description>Sql-based implementation of IIdempotenceService interface for use with Shuttle.Esb.</description>
-		<copyright>Copyright (c) 2021, Eben Roux</copyright>
+		<copyright>Copyright (c) 2022, Eben Roux</copyright>
 		<tags>idempotence</tags>
 		<dependencies>
-      <dependency id="Shuttle.Core.Data" version="11.0.1" />
-      <dependency id="Shuttle.Esb" version="11.0.0" />
-      <dependency id="System.Data.SqlClient" version="4.6.1" />
+      <dependency id="Shuttle.Core.Data" version="12.0.0" />
+      <dependency id="Shuttle.Esb" version="12.0.0" />
 		</dependencies>
 	</metadata>
   <files>
