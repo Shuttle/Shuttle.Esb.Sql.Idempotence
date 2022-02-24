@@ -77,7 +77,7 @@ namespace Shuttle.Esb.Sql.Idempotence
                         _scriptProvider.Get(
                             Script.IdempotenceInitialize))
                         .AddParameterValue(IdempotenceColumns.InboxWorkQueueUri,
-                            serviceBusConfiguration.Inbox.WorkQueue.Uri.ToString()));
+                            serviceBusConfiguration.Inbox.WorkQueueUri));
 
                 transaction.CommitTransaction();
             }
