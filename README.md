@@ -1,14 +1,20 @@
-# Shuttle.Esb.Sql.Idempotence
+# SQL
+
+```
+PM> Install-Package Shuttle.Esb.Sql.Idempotence
+```
 
 Contains a sql-based `IIdempotenceService` implementation.
 
-# Registration
+## Registration
 
 The required components may be registered by calling `ComponentRegistryExtensions.RegisterIdempotence(IComponentRegistry)`.
 
-# Supported providers
+## Supported providers
 
-Currently only the `System.Data.SqlClient` provider name is supported but this can easily be extended.  Feel free to give it a bash and please send a pull request if you *do* go this route.  You are welcome to create an issue and assistance will be provided where able.
+Currently only the `System.Data.SqlClient` and `Microsoft.Data.SqlClient` provider names are supported but this can easily be extended.  Feel free to give it a bash and please send a pull request if you *do* go this route.  You are welcome to create an issue and assistance will be provided where able.
+
+## Configuration
 
 ``` xml
 <configuration>
