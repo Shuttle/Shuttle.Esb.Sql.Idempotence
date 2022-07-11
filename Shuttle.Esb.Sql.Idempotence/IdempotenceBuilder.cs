@@ -21,6 +21,5 @@ namespace Shuttle.Esb.Sql.Idempotence
             get => _idempotenceOptions;
             set => _idempotenceOptions = value ?? throw new ArgumentNullException(nameof(value));
         }
-
     }
 }
