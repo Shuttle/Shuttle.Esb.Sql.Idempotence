@@ -17,7 +17,7 @@ namespace Shuttle.Esb.Sql.Idempotence
             builder?.Invoke(idempotenceBuilder);
 
             services.TryAddSingleton<IScriptProvider, ScriptProvider>();
-            services.TryAddSingleton<IIdempotenceService, IdempotenceService>();
+            services.AddSingleton<IIdempotenceService, IdempotenceService>();
 
             services.AddOptions<IdempotenceOptions>().Configure(options =>
             {
