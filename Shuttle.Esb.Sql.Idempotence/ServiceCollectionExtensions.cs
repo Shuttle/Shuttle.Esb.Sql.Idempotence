@@ -7,7 +7,7 @@ namespace Shuttle.Esb.Sql.Idempotence
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddIdempotence(this IServiceCollection services,
+        public static IServiceCollection AddSqlIdempotence(this IServiceCollection services,
             Action<IdempotenceBuilder> builder = null)
         {
             Guard.AgainstNull(services, nameof(services));

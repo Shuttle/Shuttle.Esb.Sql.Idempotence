@@ -29,7 +29,7 @@ namespace Shuttle.Esb.Sql.Idempotence.Tests
             });
 
             services.AddSqlQueue();
-            services.AddIdempotence(builder =>
+            services.AddSqlIdempotence(builder =>
             {
                 builder.Options.ConnectionStringName = "shuttle";
             });

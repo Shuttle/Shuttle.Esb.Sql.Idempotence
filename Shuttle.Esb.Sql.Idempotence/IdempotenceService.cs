@@ -52,7 +52,7 @@ namespace Shuttle.Esb.Sql.Idempotence
 
             if (connectionString == null)
             {
-                throw new InvalidOperationException(string.Format(Core.Data.Resources.ConnectionSettingsMissing,
+                throw new InvalidOperationException(string.Format(Core.Data.Resources.ConnectionStringMissingException,
                     connectionStringName));
             }
 
