@@ -28,7 +28,14 @@ namespace Shuttle.Esb.Sql.Idempotence.Tests
                     "server=.;database=shuttle;user id=sa;password=Pass!000");
             });
 
-            services.AddSqlQueue();
+            services.AddSqlQueue(builder =>
+            {
+                builder.AddOptions("shuttle", new SqlQueueOptions
+                {
+                    ConnectionStringName = "shuttle"
+                });
+            });
+
             services.AddSqlIdempotence(builder =>
             {
                 builder.Options.ConnectionStringName = "shuttle";
