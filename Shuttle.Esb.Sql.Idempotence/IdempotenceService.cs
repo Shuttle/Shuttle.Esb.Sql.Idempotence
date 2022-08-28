@@ -15,22 +15,21 @@ namespace Shuttle.Esb.Sql.Idempotence
 
         private readonly IDatabaseGateway _databaseGateway;
         private readonly string _idempotenceConnectionString;
-        private readonly IdempotenceOptions _idempotenceOptions;
 
         private readonly string _idempotenceProviderName;
         private readonly IScriptProvider _scriptProvider;
 
         public IdempotenceService(
             IOptionsMonitor<ConnectionStringOptions> connectionStringOptions,
-            IOptions<IdempotenceOptions> idempotenceOptions,
+            IOptions<ServiceBusOptions> serviceBusOptions,
             IServiceBusConfiguration serviceBusConfiguration,
             IScriptProvider scriptProvider,
             IDatabaseContextFactory databaseContextFactory,
             IDatabaseGateway databaseGateway)
         {
             Guard.AgainstNull(connectionStringOptions, nameof(connectionStringOptions));
-            Guard.AgainstNull(idempotenceOptions, nameof(idempotenceOptions));
-            Guard.AgainstNull(idempotenceOptions.Value, nameof(idempotenceOptions.Value));
+            Guard.AgainstNull(serviceBusOptions, nameof(serviceBusOptions));
+            Guard.AgainstNull(serviceBusOptions.Value, nameof(serviceBusOptions.Value));
             Guard.AgainstNull(serviceBusConfiguration, nameof(serviceBusConfiguration));
             Guard.AgainstNull(scriptProvider, nameof(scriptProvider));
             Guard.AgainstNull(databaseContextFactory, nameof(databaseContextFactory));
@@ -45,9 +44,7 @@ namespace Shuttle.Esb.Sql.Idempotence
             _databaseContextFactory = databaseContextFactory;
             _databaseGateway = databaseGateway;
 
-            _idempotenceOptions = idempotenceOptions.Value;
-
-            var connectionStringName = idempotenceOptions.Value.ConnectionStringName;
+            var connectionStringName = serviceBusOptions.Value.Idempotence.ConnectionStringName;
             var connectionString = connectionStringOptions.Get(connectionStringName);
 
             if (connectionString == null)

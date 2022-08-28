@@ -19,9 +19,8 @@ services.AddDataAccess(builder =>
         "server=.;database=shuttle;user id=sa;password=Pass!000");
 });
 
-services.AddSqlIdempotence(builder =>
-{
-    builder.Options.ConnectionStringName = "shuttle";
+services.AddServiceBus(builder => {
+    builder.Options.Idempotence.ConnectionStringName = "shuttle";
 });
 ```
 
