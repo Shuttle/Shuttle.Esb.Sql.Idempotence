@@ -1,10 +1,9 @@
 ﻿using System.Data.Common;
 using System.Data.SqlClient;
-using Castle.Windsor;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using Shuttle.Core.Castle;
-using Shuttle.Core.Container;
 using Shuttle.Core.Data;
+using Shuttle.Esb;
 using Shuttle.Esb.Sql.Queue;
 using Shuttle.Esb.Tests;
 
@@ -22,21 +21,25 @@ namespace Shuttle.Esb.Sql.Idempotence.Tests
         {
             DbProviderFactories.RegisterFactory("System.Data.SqlClient", SqlClientFactory.Instance);
 
-            var container = new WindsorComponentContainer(new WindsorContainer());
+            var services = new ServiceCollection();
 
-            container.RegisterInstance<IIdempotenceConfiguration>(new IdempotenceConfiguration
+            services.AddDataAccess(builder =>
             {
-                ProviderName = "System.Data.SqlClient",
-                ConnectionString = "server=.;database=shuttle;user id=sa;password=Pass!000"
+                builder.AddConnectionString("Idempotence", "System.Data.SqlClient",
+                    "server=.;database=shuttle;user id=sa;password=Pass!000");
             });
 
-            container.Register<IConnectionConfigurationProvider, ConnectionConfigurationProvider>();
-            container.RegisterSqlQueue();
-            container.RegisterIdempotence();
-            container.RegisterDataAccess();
+            services.AddSqlQueue(builder =>
+            {
+                builder.AddOptions("idempotence", new SqlQueueOptions
+                {
+                    ConnectionStringName = "Idempotence"
+                });
+            });
 
-            TestIdempotenceProcessing(new ComponentContainer(container, () => container), @"sql://shuttle/{0}",
-                isTransactionalEndpoint, enqueueUniqueMessages);
+            services.AddSqlIdempotence();
+
+            TestIdempotenceProcessing(services, @"sql://idempotence/{0}",  isTransactionalEndpoint, enqueueUniqueMessages);
         }
     }
 }

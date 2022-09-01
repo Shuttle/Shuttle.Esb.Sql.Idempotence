@@ -1,222 +1,220 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.IO;
 using System.Threading;
+using Microsoft.Extensions.Options;
 using Shuttle.Core.Contract;
 using Shuttle.Core.Data;
 using Shuttle.Core.Streams;
 
 namespace Shuttle.Esb.Sql.Idempotence
 {
-	public class IdempotenceService : IIdempotenceService
-	{
-		private readonly IDatabaseContextFactory _databaseContextFactory;
-
-        private readonly string _idempotenceProviderName;
-        private readonly string _idempotenceConnectionString;
+    public class IdempotenceService : IIdempotenceService
+    {
+        private readonly IDatabaseContextFactory _databaseContextFactory;
 
         private readonly IDatabaseGateway _databaseGateway;
-		private readonly IScriptProvider _scriptProvider;
+        private readonly string _idempotenceConnectionString;
 
-		public IdempotenceService(
+        private readonly string _idempotenceProviderName;
+        private readonly IScriptProvider _scriptProvider;
+
+        public IdempotenceService(
+            IOptionsMonitor<ConnectionStringOptions> connectionStringOptions,
+            IOptions<ServiceBusOptions> serviceBusOptions,
             IServiceBusConfiguration serviceBusConfiguration,
-            IIdempotenceConfiguration idempotenceConfiguration,
-			IScriptProvider scriptProvider,
-			IDatabaseContextFactory databaseContextFactory,
-			IDatabaseGateway databaseGateway)
-		{
-			Guard.AgainstNull(serviceBusConfiguration, "serviceBusConfiguration");
-			Guard.AgainstNull(idempotenceConfiguration, "idempotenceConfiguration");
-			Guard.AgainstNull(scriptProvider, "scriptProvider");
-			Guard.AgainstNull(databaseContextFactory, "databaseContextFactory");
-			Guard.AgainstNull(databaseGateway, "databaseGateway");
+            IScriptProvider scriptProvider,
+            IDatabaseContextFactory databaseContextFactory,
+            IDatabaseGateway databaseGateway)
+        {
+            Guard.AgainstNull(connectionStringOptions, nameof(connectionStringOptions));
+            Guard.AgainstNull(serviceBusOptions, nameof(serviceBusOptions));
+            Guard.AgainstNull(serviceBusOptions.Value, nameof(serviceBusOptions.Value));
+            Guard.AgainstNull(serviceBusConfiguration, nameof(serviceBusConfiguration));
+            Guard.AgainstNull(scriptProvider, nameof(scriptProvider));
+            Guard.AgainstNull(databaseContextFactory, nameof(databaseContextFactory));
+            Guard.AgainstNull(databaseGateway, nameof(databaseGateway));
 
-		    if (!serviceBusConfiguration.HasInbox)
-		    {
-                throw new InvalidOperationException(Resources.NoInboxException);
-		    }
-
-		    _scriptProvider = scriptProvider;
-			_databaseContextFactory = databaseContextFactory;
-			_databaseGateway = databaseGateway;
-
-		    _idempotenceProviderName = idempotenceConfiguration.ProviderName;
-
-            if (string.IsNullOrEmpty(_idempotenceProviderName))
+            if (!serviceBusConfiguration.HasInbox())
             {
-                throw new ApplicationException(string.Format(Resources.ProviderNameEmpty,
-                    "IdempotenceService"));
+                throw new InvalidOperationException(Resources.NoInboxException);
             }
 
-            _idempotenceConnectionString = idempotenceConfiguration.ConnectionString;
+            _scriptProvider = scriptProvider;
+            _databaseContextFactory = databaseContextFactory;
+            _databaseGateway = databaseGateway;
 
-			if (string.IsNullOrEmpty(_idempotenceConnectionString))
-			{
-				throw new ApplicationException(string.Format(Resources.ConnectionStringEmpty,
-					"IdempotenceService"));
-			}
+            var connectionStringName = serviceBusOptions.Value.Idempotence.ConnectionStringName;
+            var connectionString = connectionStringOptions.Get(connectionStringName);
 
-            Guard.AgainstNull(idempotenceConfiguration, "configuration");
+            if (connectionString == null)
+            {
+                throw new InvalidOperationException(string.Format(Core.Data.Resources.ConnectionStringMissingException,
+                    connectionStringName));
+            }
+
+            _idempotenceProviderName = connectionString.ProviderName;
+            _idempotenceConnectionString = connectionString.ConnectionString;
 
             using (
                 var connection = _databaseContextFactory.Create(_idempotenceProviderName,
                     _idempotenceConnectionString))
             using (var transaction = connection.BeginTransaction())
             {
-                if (_databaseGateway.GetScalarUsing<int>(
-                    RawQuery.Create(
-                        _scriptProvider.Get(
-                            Script.IdempotenceServiceExists))) != 1)
+                if (_databaseGateway.GetScalar<int>(
+                        RawQuery.Create(
+                            _scriptProvider.Get(
+                                Script.IdempotenceServiceExists))) != 1)
                 {
                     throw new InvalidOperationException(Resources.IdempotenceDatabaseNotConfigured);
                 }
 
-                _databaseGateway.ExecuteUsing(
+                _databaseGateway.Execute(
                     RawQuery.Create(
-                        _scriptProvider.Get(
-                            Script.IdempotenceInitialize))
-                        .AddParameterValue(IdempotenceColumns.InboxWorkQueueUri,
-                            serviceBusConfiguration.Inbox.WorkQueueUri));
+                            _scriptProvider.Get(
+                                Script.IdempotenceInitialize))
+                        .AddParameterValue(Columns.InboxWorkQueueUri,
+                            serviceBusConfiguration.Inbox.WorkQueue.Uri.ToString()));
 
                 transaction.CommitTransaction();
             }
         }
 
         public ProcessingStatus ProcessingStatus(TransportMessage transportMessage)
-		{
-			try
-			{
-				using (
-					var connection = _databaseContextFactory.Create(_idempotenceProviderName,
-						_idempotenceConnectionString))
-				using (var transaction = connection.BeginTransaction())
-				{
-					try
-					{
-						if (_databaseGateway.GetScalarUsing<int>(
-							RawQuery.Create(
-								_scriptProvider.Get(
-									Script.IdempotenceHasCompleted))
-								.AddParameterValue(IdempotenceColumns.MessageId, transportMessage.MessageId)) == 1)
-						{
-							return Esb.ProcessingStatus.Ignore;
-						}
+        {
+            try
+            {
+                using (
+                    var connection = _databaseContextFactory.Create(_idempotenceProviderName,
+                        _idempotenceConnectionString))
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        if (_databaseGateway.GetScalar<int>(
+                                RawQuery.Create(
+                                        _scriptProvider.Get(
+                                            Script.IdempotenceHasCompleted))
+                                    .AddParameterValue(Columns.MessageId, transportMessage.MessageId)) == 1)
+                        {
+                            return Esb.ProcessingStatus.Ignore;
+                        }
 
-						if (_databaseGateway.GetScalarUsing<int>(
-							RawQuery.Create(
-								_scriptProvider.Get(
-									Script.IdempotenceIsProcessing))
-								.AddParameterValue(IdempotenceColumns.MessageId, transportMessage.MessageId)) == 1)
-						{
-							return Esb.ProcessingStatus.Ignore;
-						}
+                        if (_databaseGateway.GetScalar<int>(
+                                RawQuery.Create(
+                                        _scriptProvider.Get(
+                                            Script.IdempotenceIsProcessing))
+                                    .AddParameterValue(Columns.MessageId, transportMessage.MessageId)) == 1)
+                        {
+                            return Esb.ProcessingStatus.Ignore;
+                        }
 
-						_databaseGateway.ExecuteUsing(
-							RawQuery.Create(
-								_scriptProvider.Get(
-									Script.IdempotenceProcessing))
-								.AddParameterValue(IdempotenceColumns.MessageId, transportMessage.MessageId)
-								.AddParameterValue(IdempotenceColumns.InboxWorkQueueUri,
-									transportMessage.RecipientInboxWorkQueueUri)
-								.AddParameterValue(IdempotenceColumns.AssignedThreadId,
-									Thread.CurrentThread.ManagedThreadId));
+                        _databaseGateway.Execute(
+                            RawQuery.Create(
+                                    _scriptProvider.Get(
+                                        Script.IdempotenceProcessing))
+                                .AddParameterValue(Columns.MessageId, transportMessage.MessageId)
+                                .AddParameterValue(Columns.InboxWorkQueueUri,
+                                    transportMessage.RecipientInboxWorkQueueUri)
+                                .AddParameterValue(Columns.AssignedThreadId,
+                                    Thread.CurrentThread.ManagedThreadId));
 
-						var messageHandled = _databaseGateway.GetScalarUsing<int>(
-							RawQuery.Create(
-								_scriptProvider.Get(
-									Script.IdempotenceIsMessageHandled))
-								.AddParameterValue(IdempotenceColumns.MessageId, transportMessage.MessageId)) == 1;
+                        var messageHandled = _databaseGateway.GetScalar<int>(
+                            RawQuery.Create(
+                                    _scriptProvider.Get(
+                                        Script.IdempotenceIsMessageHandled))
+                                .AddParameterValue(Columns.MessageId, transportMessage.MessageId)) == 1;
 
-						return messageHandled
-							? Esb.ProcessingStatus.MessageHandled
-							: Esb.ProcessingStatus.Assigned;
-					}
-					finally
-					{
-						transaction.CommitTransaction();
-					}
-				}
-			}
-			catch (Exception ex)
-			{
-				var message = ex.Message.ToUpperInvariant();
+                        return messageHandled
+                            ? Esb.ProcessingStatus.MessageHandled
+                            : Esb.ProcessingStatus.Assigned;
+                    }
+                    finally
+                    {
+                        transaction.CommitTransaction();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                var message = ex.Message.ToUpperInvariant();
 
-				if (message.Contains("VIOLATION OF UNIQUE KEY CONSTRAINT") ||
-				    message.Contains("CANNOT INSERT DUPLICATE KEY") || message.Contains("IGNORE MESSAGE PROCESSING"))
-				{
-					return Esb.ProcessingStatus.Ignore;
-				}
+                if (message.Contains("VIOLATION OF UNIQUE KEY CONSTRAINT") ||
+                    message.Contains("CANNOT INSERT DUPLICATE KEY") || message.Contains("IGNORE MESSAGE PROCESSING"))
+                {
+                    return Esb.ProcessingStatus.Ignore;
+                }
 
-				throw;
-			}
-		}
+                throw;
+            }
+        }
 
-		public void ProcessingCompleted(TransportMessage transportMessage)
-		{
-			using (
-				var connection = _databaseContextFactory.Create(_idempotenceProviderName,
-					_idempotenceConnectionString))
-			using (var transaction = connection.BeginTransaction())
-			{
-				_databaseGateway.ExecuteUsing(
-					RawQuery.Create(
-						_scriptProvider.Get(Script.IdempotenceComplete))
-						.AddParameterValue(IdempotenceColumns.MessageId, transportMessage.MessageId));
+        public void ProcessingCompleted(TransportMessage transportMessage)
+        {
+            using (
+                var connection = _databaseContextFactory.Create(_idempotenceProviderName,
+                    _idempotenceConnectionString))
+            using (var transaction = connection.BeginTransaction())
+            {
+                _databaseGateway.Execute(
+                    RawQuery.Create(
+                            _scriptProvider.Get(Script.IdempotenceComplete))
+                        .AddParameterValue(Columns.MessageId, transportMessage.MessageId));
 
-				transaction.CommitTransaction();
-			}
-		}
+                transaction.CommitTransaction();
+            }
+        }
 
-		public IEnumerable<Stream> GetDeferredMessages(TransportMessage transportMessage)
-		{
-			var result = new List<Stream>();
+        public IEnumerable<Stream> GetDeferredMessages(TransportMessage transportMessage)
+        {
+            var result = new List<Stream>();
 
-			using (_databaseContextFactory.Create(_idempotenceProviderName, _idempotenceConnectionString))
-			{
-				var rows = _databaseGateway.GetRowsUsing(
-					RawQuery.Create(_scriptProvider.Get(Script.IdempotenceGetDeferredMessages))
-						.AddParameterValue(IdempotenceColumns.MessageIdReceived, transportMessage.MessageId));
+            using (_databaseContextFactory.Create(_idempotenceProviderName, _idempotenceConnectionString))
+            {
+                var rows = _databaseGateway.GetRows(
+                    RawQuery.Create(_scriptProvider.Get(Script.IdempotenceGetDeferredMessages))
+                        .AddParameterValue(Columns.MessageIdReceived, transportMessage.MessageId));
 
-				foreach (var row in rows)
-				{
-					result.Add(new MemoryStream((byte[]) row["MessageBody"]));
-				}
-			}
+                foreach (var row in rows)
+                {
+                    result.Add(new MemoryStream((byte[])row["MessageBody"]));
+                }
+            }
 
-			return result;
-		}
+            return result;
+        }
 
-		public void DeferredMessageSent(TransportMessage processingTransportMessage,
-			TransportMessage deferredTransportMessage)
-		{
-			using (_databaseContextFactory.Create(_idempotenceProviderName, _idempotenceConnectionString))
-			{
-				_databaseGateway.ExecuteUsing(
-					RawQuery.Create(_scriptProvider.Get(Script.IdempotenceDeferredMessageSent))
-						.AddParameterValue(IdempotenceColumns.MessageId, deferredTransportMessage.MessageId));
-			}
-		}
-
-		public void MessageHandled(TransportMessage transportMessage)
-		{
-			using (_databaseContextFactory.Create(_idempotenceProviderName, _idempotenceConnectionString))
-			{
-				_databaseGateway.ExecuteUsing(
-					RawQuery.Create(_scriptProvider.Get(Script.IdempotenceMessageHandled))
-						.AddParameterValue(IdempotenceColumns.MessageId, transportMessage.MessageId));
-			}
-		}
-
-        public bool AddDeferredMessage(TransportMessage processingTransportMessage, TransportMessage deferredTransportMessage, Stream deferredTransportMessageStream)
+        public void DeferredMessageSent(TransportMessage processingTransportMessage,
+            TransportMessage deferredTransportMessage)
         {
             using (_databaseContextFactory.Create(_idempotenceProviderName, _idempotenceConnectionString))
             {
-                _databaseGateway.ExecuteUsing(
+                _databaseGateway.Execute(
+                    RawQuery.Create(_scriptProvider.Get(Script.IdempotenceDeferredMessageSent))
+                        .AddParameterValue(Columns.MessageId, deferredTransportMessage.MessageId));
+            }
+        }
+
+        public void MessageHandled(TransportMessage transportMessage)
+        {
+            using (_databaseContextFactory.Create(_idempotenceProviderName, _idempotenceConnectionString))
+            {
+                _databaseGateway.Execute(
+                    RawQuery.Create(_scriptProvider.Get(Script.IdempotenceMessageHandled))
+                        .AddParameterValue(Columns.MessageId, transportMessage.MessageId));
+            }
+        }
+
+        public bool AddDeferredMessage(TransportMessage processingTransportMessage,
+            TransportMessage deferredTransportMessage, Stream deferredTransportMessageStream)
+        {
+            using (_databaseContextFactory.Create(_idempotenceProviderName, _idempotenceConnectionString))
+            {
+                _databaseGateway.Execute(
                     RawQuery.Create(_scriptProvider.Get(Script.IdempotenceSendDeferredMessage))
-                        .AddParameterValue(IdempotenceColumns.MessageId, deferredTransportMessage.MessageId)
-                        .AddParameterValue(IdempotenceColumns.MessageIdReceived, processingTransportMessage.MessageId)
-                        .AddParameterValue(IdempotenceColumns.MessageBody, deferredTransportMessageStream.ToBytes()));
+                        .AddParameterValue(Columns.MessageId, deferredTransportMessage.MessageId)
+                        .AddParameterValue(Columns.MessageIdReceived, processingTransportMessage.MessageId)
+                        .AddParameterValue(Columns.MessageBody, deferredTransportMessageStream.ToBytes()));
             }
 
             return true;
