@@ -1,45 +1,63 @@
 ﻿using System.Data.Common;
-using System.Data.SqlClient;
+using System.Threading.Tasks;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Shuttle.Core.Data;
-using Shuttle.Esb;
 using Shuttle.Esb.Sql.Queue;
 using Shuttle.Esb.Tests;
 
-namespace Shuttle.Esb.Sql.Idempotence.Tests
+namespace Shuttle.Esb.Sql.Idempotence.Tests;
+
+[TestFixture]
+public class IdempotenceTest : IdempotenceFixture
 {
-    [TestFixture]
-    public class IdempotenceTest : IdempotenceFixture
+    [SetUp]
+    public void SetUp()
     {
-        [Test]
-        [TestCase(false, false)]
-        [TestCase(false, true)]
-        [TestCase(true, false)]
-        [TestCase(true, true)]
-        public void Should_be_able_to_perform_full_processing(bool isTransactionalEndpoint, bool enqueueUniqueMessages)
+        DbProviderFactories.RegisterFactory("Microsoft.Data.SqlClient", SqlClientFactory.Instance);
+    }
+
+    [Test]
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public void Should_be_able_to_perform_full_processing(bool isTransactionalEndpoint, bool enqueueUniqueMessages)
+    {
+        TestIdempotenceProcessing(GetServiceCollection(), @"sql://idempotence/{0}", isTransactionalEndpoint, enqueueUniqueMessages);
+    }
+
+    [Test]
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public async Task Should_be_able_to_perform_full_processing_async(bool isTransactionalEndpoint, bool enqueueUniqueMessages)
+    {
+        await TestIdempotenceProcessingAsync(GetServiceCollection(), @"sql://idempotence/{0}", isTransactionalEndpoint, enqueueUniqueMessages);
+    }
+
+    private static ServiceCollection GetServiceCollection()
+    {
+        var services = new ServiceCollection();
+
+        services.AddDataAccess(builder =>
         {
-            DbProviderFactories.RegisterFactory("System.Data.SqlClient", SqlClientFactory.Instance);
+            builder.AddConnectionString("Idempotence", "Microsoft.Data.SqlClient",
+                "server=.;database=shuttle;user id=sa;password=Pass!000;TrustServerCertificate=true");
+        });
 
-            var services = new ServiceCollection();
-
-            services.AddDataAccess(builder =>
+        services.AddSqlQueue(builder =>
+        {
+            builder.AddOptions("idempotence", new SqlQueueOptions
             {
-                builder.AddConnectionString("Idempotence", "System.Data.SqlClient",
-                    "server=.;database=shuttle;user id=sa;password=Pass!000");
+                ConnectionStringName = "Idempotence"
             });
+        });
 
-            services.AddSqlQueue(builder =>
-            {
-                builder.AddOptions("idempotence", new SqlQueueOptions
-                {
-                    ConnectionStringName = "Idempotence"
-                });
-            });
+        services.AddSqlIdempotence();
 
-            services.AddSqlIdempotence();
-
-            TestIdempotenceProcessing(services, @"sql://idempotence/{0}",  isTransactionalEndpoint, enqueueUniqueMessages);
-        }
+        return services;
     }
 }
