@@ -14,52 +14,41 @@ namespace Shuttle.Esb.Sql.Idempotence
     {
         private readonly string _connectionStringName;
         private readonly IDatabaseContextFactory _databaseContextFactory;
+        private readonly IDatabaseContextService _databaseContextService;
 
         private readonly IDatabaseGateway _databaseGateway;
         private readonly IScriptProvider _scriptProvider;
 
-        public IdempotenceService(
-            IOptionsMonitor<ConnectionStringOptions> connectionStringOptions,
-            IOptions<ServiceBusOptions> serviceBusOptions,
-            IServiceBusConfiguration serviceBusConfiguration,
-            IScriptProvider scriptProvider,
-            IDatabaseContextFactory databaseContextFactory,
-            IDatabaseGateway databaseGateway)
+        public IdempotenceService(IOptionsMonitor<ConnectionStringOptions> connectionStringOptions, IOptions<ServiceBusOptions> serviceBusOptions, IServiceBusConfiguration serviceBusConfiguration, IScriptProvider scriptProvider, IDatabaseContextService databaseContextService, IDatabaseContextFactory databaseContextFactory, IDatabaseGateway databaseGateway)
         {
             Guard.AgainstNull(connectionStringOptions, nameof(connectionStringOptions));
             Guard.AgainstNull(serviceBusOptions, nameof(serviceBusOptions));
             Guard.AgainstNull(serviceBusOptions.Value, nameof(serviceBusOptions.Value));
             Guard.AgainstNull(serviceBusConfiguration, nameof(serviceBusConfiguration));
-            Guard.AgainstNull(scriptProvider, nameof(scriptProvider));
-            Guard.AgainstNull(databaseContextFactory, nameof(databaseContextFactory));
-            Guard.AgainstNull(databaseGateway, nameof(databaseGateway));
 
             if (!serviceBusConfiguration.HasInbox())
             {
                 throw new InvalidOperationException(Resources.NoInboxException);
             }
 
-            _scriptProvider = scriptProvider;
-            _databaseContextFactory = databaseContextFactory;
-            _databaseGateway = databaseGateway;
+            _scriptProvider = Guard.AgainstNull(scriptProvider, nameof(scriptProvider));
+            _databaseContextService = Guard.AgainstNull(databaseContextService, nameof(databaseContextService));
+            _databaseContextFactory = Guard.AgainstNull(databaseContextFactory, nameof(databaseContextFactory));
+            _databaseGateway = Guard.AgainstNull(databaseGateway, nameof(databaseGateway));
 
             _connectionStringName = serviceBusOptions.Value.Idempotence.ConnectionStringName;
 
-            using (var connection = _databaseContextFactory.Create(_connectionStringName))
-            using (var transaction = connection.BeginTransaction())
+            using (_databaseContextService.BeginScope())
+            using (var databaseContext = _databaseContextFactory.Create(_connectionStringName))
+            using (var transaction = databaseContext.BeginTransaction())
             {
-                if (_databaseGateway.GetScalar<int>(
-                        new Query(
-                            _scriptProvider.Get(_connectionStringName, Script.IdempotenceServiceExists))) != 1)
+                if (_databaseGateway.GetScalar<int>(new Query(_scriptProvider.Get(_connectionStringName, Script.IdempotenceServiceExists))) != 1)
                 {
                     throw new InvalidOperationException(Resources.IdempotenceDatabaseNotConfigured);
                 }
 
-                _databaseGateway.Execute(
-                    new Query(
-                            _scriptProvider.Get(_connectionStringName, Script.IdempotenceInitialize))
-                        .AddParameter(Columns.InboxWorkQueueUri,
-                            serviceBusConfiguration.Inbox.WorkQueue.Uri.ToString()));
+                _databaseGateway.Execute(new Query(_scriptProvider.Get(_connectionStringName, Script.IdempotenceInitialize))
+                    .AddParameter(Columns.InboxWorkQueueUri, serviceBusConfiguration.Inbox.WorkQueue.Uri.ToString()));
 
                 transaction.CommitTransaction();
             }
@@ -85,10 +74,135 @@ namespace Shuttle.Esb.Sql.Idempotence
             await ProcessingCompletedAsync(transportMessage, false).ConfigureAwait(false);
         }
 
+        public async ValueTask<bool> AddDeferredMessageAsync(TransportMessage processingTransportMessage, TransportMessage deferredTransportMessage, Stream deferredTransportMessageStream)
+        {
+            return await AddDeferredMessageAsync(processingTransportMessage, deferredTransportMessage, deferredTransportMessageStream, false).ConfigureAwait(false);
+        }
+
+        public IEnumerable<Stream> GetDeferredMessages(TransportMessage transportMessage)
+        {
+            return GetDeferredMessagesAsync(transportMessage, true).GetAwaiter().GetResult();
+        }
+
+        public async Task<IEnumerable<Stream>> GetDeferredMessagesAsync(TransportMessage transportMessage)
+        {
+            return await GetDeferredMessagesAsync(transportMessage, false).ConfigureAwait(false);
+        }
+
+        public void DeferredMessageSent(TransportMessage processingTransportMessage, TransportMessage deferredTransportMessage)
+        {
+            DeferredMessageSentAsync(processingTransportMessage, deferredTransportMessage, true).GetAwaiter().GetResult();
+        }
+
+        public async Task DeferredMessageSentAsync(TransportMessage processingTransportMessage, TransportMessage deferredTransportMessage)
+        {
+            await DeferredMessageSentAsync(processingTransportMessage, deferredTransportMessage, false).ConfigureAwait(false);
+        }
+
+        public void MessageHandled(TransportMessage transportMessage)
+        {
+            MessageHandledAsync(transportMessage, true).GetAwaiter().GetResult();
+        }
+
+        public async Task MessageHandledAsync(TransportMessage transportMessage)
+        {
+            await MessageHandledAsync(transportMessage, false).ConfigureAwait(false);
+        }
+
+        public bool AddDeferredMessage(TransportMessage processingTransportMessage, TransportMessage deferredTransportMessage, Stream deferredTransportMessageStream)
+        {
+            return AddDeferredMessageAsync(processingTransportMessage, deferredTransportMessage, deferredTransportMessageStream, true).GetAwaiter().GetResult();
+        }
+
+        private async ValueTask<bool> AddDeferredMessageAsync(TransportMessage processingTransportMessage, TransportMessage deferredTransportMessage, Stream deferredTransportMessageStream, bool sync)
+        {
+            using (_databaseContextService.BeginScope())
+            await using (_databaseContextFactory.Create(_connectionStringName))
+            {
+                var query = new Query(_scriptProvider.Get(_connectionStringName, Script.IdempotenceSendDeferredMessage))
+                    .AddParameter(Columns.MessageId, deferredTransportMessage.MessageId)
+                    .AddParameter(Columns.MessageIdReceived, processingTransportMessage.MessageId)
+                    .AddParameter(Columns.MessageBody, sync ? deferredTransportMessageStream.ToBytes() : await deferredTransportMessageStream.ToBytesAsync().ConfigureAwait(false));
+
+                if (sync)
+                {
+                    _databaseGateway.Execute(query);
+                }
+                else
+                {
+                    await _databaseGateway.ExecuteAsync(query).ConfigureAwait(false);
+                }
+            }
+
+            return true;
+        }
+
+        public async Task DeferredMessageSentAsync(TransportMessage processingTransportMessage, TransportMessage deferredTransportMessage, bool sync)
+        {
+            using (_databaseContextService.BeginScope())
+            await using (_databaseContextFactory.Create(_connectionStringName))
+            {
+                var query = new Query(_scriptProvider.Get(_connectionStringName, Script.IdempotenceDeferredMessageSent))
+                    .AddParameter(Columns.MessageId, deferredTransportMessage.MessageId);
+
+                if (sync)
+                {
+                    _databaseGateway.Execute(query);
+                }
+                else
+                {
+                    await _databaseGateway.ExecuteAsync(query).ConfigureAwait(false);
+                }
+            }
+        }
+
+        private async Task<IEnumerable<Stream>> GetDeferredMessagesAsync(TransportMessage transportMessage, bool sync)
+        {
+            var result = new List<Stream>();
+
+            using (_databaseContextService.BeginScope())
+            await using (_databaseContextFactory.Create(_connectionStringName))
+            {
+                var query = new Query(_scriptProvider.Get(_connectionStringName, Script.IdempotenceGetDeferredMessages))
+                    .AddParameter(Columns.MessageIdReceived, transportMessage.MessageId);
+
+                var rows = sync
+                    ? _databaseGateway.GetRows(query)
+                    : await _databaseGateway.GetRowsAsync(query);
+
+                foreach (var row in rows)
+                {
+                    result.Add(new MemoryStream((byte[])row["MessageBody"]));
+                }
+            }
+
+            return result;
+        }
+
+        private async Task MessageHandledAsync(TransportMessage transportMessage, bool sync)
+        {
+            using (_databaseContextService.BeginScope())
+            await using (_databaseContextFactory.Create(_connectionStringName))
+            {
+                var query = new Query(_scriptProvider.Get(_connectionStringName, Script.IdempotenceMessageHandled))
+                    .AddParameter(Columns.MessageId, transportMessage.MessageId);
+
+                if (sync)
+                {
+                    _databaseGateway.Execute(query);
+                }
+                else
+                {
+                    await _databaseGateway.ExecuteAsync(query).ConfigureAwait(false);
+                }
+            }
+        }
+
         private async Task ProcessingCompletedAsync(TransportMessage transportMessage, bool sync)
         {
-            using (var connection = _databaseContextFactory.Create(_connectionStringName))
-            using (var transaction = sync ? connection.BeginTransaction() : await connection.BeginTransactionAsync().ConfigureAwait(false))
+            using (_databaseContextService.BeginScope())
+            await using (var databaseContext = _databaseContextFactory.Create(_connectionStringName))
+            await using (var transaction = sync ? databaseContext.BeginTransaction() : await databaseContext.BeginTransactionAsync().ConfigureAwait(false))
             {
                 var query = new Query(_scriptProvider.Get(_connectionStringName, Script.IdempotenceComplete))
                     .AddParameter(Columns.MessageId, transportMessage.MessageId);
@@ -108,107 +222,13 @@ namespace Shuttle.Esb.Sql.Idempotence
             }
         }
 
-        public async ValueTask<bool> AddDeferredMessageAsync(TransportMessage processingTransportMessage, TransportMessage deferredTransportMessage, Stream deferredTransportMessageStream)
-        {
-            return await AddDeferredMessageAsync(processingTransportMessage, deferredTransportMessage, deferredTransportMessageStream, false).ConfigureAwait(false);
-        }
-
-        private async ValueTask<bool> AddDeferredMessageAsync(TransportMessage processingTransportMessage, TransportMessage deferredTransportMessage, Stream deferredTransportMessageStream, bool sync)
-        {
-            using (_databaseContextFactory.Create(_connectionStringName))
-            {
-                var query = new Query(_scriptProvider.Get(_connectionStringName, Script.IdempotenceSendDeferredMessage))
-                    .AddParameter(Columns.MessageId, deferredTransportMessage.MessageId)
-                    .AddParameter(Columns.MessageIdReceived, processingTransportMessage.MessageId)
-                    .AddParameter(Columns.MessageBody,  sync? deferredTransportMessageStream.ToBytes(): await deferredTransportMessageStream.ToBytesAsync().ConfigureAwait(false));
-
-                if (sync)
-                {
-                    _databaseGateway.Execute(query);
-                }
-                else
-                {
-                    await _databaseGateway.ExecuteAsync(query).ConfigureAwait(false);
-                }
-            }
-
-            return true;
-        }
-
-        public IEnumerable<Stream> GetDeferredMessages(TransportMessage transportMessage)
-        {
-            return GetDeferredMessagesAsync(transportMessage, true).GetAwaiter().GetResult();
-        }
-
-        public async Task<IEnumerable<Stream>> GetDeferredMessagesAsync(TransportMessage transportMessage)
-        {
-            return await GetDeferredMessagesAsync(transportMessage, false).ConfigureAwait(false);
-        }
-
-        private async Task<IEnumerable<Stream>> GetDeferredMessagesAsync(TransportMessage transportMessage, bool sync)
-        {
-            var result = new List<Stream>();
-
-            using (_databaseContextFactory.Create(_connectionStringName))
-            {
-                var query = new Query(_scriptProvider.Get(_connectionStringName, Script.IdempotenceGetDeferredMessages))
-                    .AddParameter(Columns.MessageIdReceived, transportMessage.MessageId);
-
-                var rows = sync
-                ?_databaseGateway.GetRows(query)
-                : await _databaseGateway.GetRowsAsync(query);
-
-                foreach (var row in rows)
-                {
-                    result.Add(new MemoryStream((byte[])row["MessageBody"]));
-                }
-            }
-
-            return result;
-        }
-
-        public void DeferredMessageSent(TransportMessage processingTransportMessage,
-            TransportMessage deferredTransportMessage)
-        {
-            using (_databaseContextFactory.Create(_connectionStringName))
-            {
-                _databaseGateway.Execute(
-                    new Query(_scriptProvider.Get(_connectionStringName, Script.IdempotenceDeferredMessageSent))
-                        .AddParameter(Columns.MessageId, deferredTransportMessage.MessageId));
-            }
-        }
-
-        public Task DeferredMessageSentAsync(TransportMessage processingTransportMessage, TransportMessage deferredTransportMessage)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void MessageHandled(TransportMessage transportMessage)
-        {
-            using (_databaseContextFactory.Create(_connectionStringName))
-            {
-                _databaseGateway.Execute(
-                    new Query(_scriptProvider.Get(_connectionStringName, Script.IdempotenceMessageHandled))
-                        .AddParameter(Columns.MessageId, transportMessage.MessageId));
-            }
-        }
-
-        public Task MessageHandledAsync(TransportMessage transportMessage)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool AddDeferredMessage(TransportMessage processingTransportMessage, TransportMessage deferredTransportMessage, Stream deferredTransportMessageStream)
-        {
-            return AddDeferredMessageAsync(processingTransportMessage, deferredTransportMessage, deferredTransportMessageStream, true).GetAwaiter().GetResult();
-        }
-
         private async ValueTask<ProcessingStatus> ProcessingStatusAsync(TransportMessage transportMessage, bool sync)
         {
             try
             {
-                using (var connection = _databaseContextFactory.Create(_connectionStringName))
-                using (var transaction = sync ? connection.BeginTransaction() : await connection.BeginTransactionAsync().ConfigureAwait(false))
+                using (_databaseContextService.BeginScope())
+                await using (var databaseContext = _databaseContextFactory.Create(_connectionStringName))
+                await using (var transaction = sync ? databaseContext.BeginTransaction() : await databaseContext.BeginTransactionAsync().ConfigureAwait(false))
                 {
                     try
                     {
@@ -269,7 +289,7 @@ namespace Shuttle.Esb.Sql.Idempotence
                 var message = ex.Message.ToUpperInvariant();
 
                 if (message.Contains("VIOLATION OF UNIQUE KEY CONSTRAINT", StringComparison.InvariantCultureIgnoreCase) ||
-                    message.Contains("CANNOT INSERT DUPLICATE KEY", StringComparison.InvariantCultureIgnoreCase) || 
+                    message.Contains("CANNOT INSERT DUPLICATE KEY", StringComparison.InvariantCultureIgnoreCase) ||
                     message.Contains("IGNORE MESSAGE PROCESSING", StringComparison.InvariantCultureIgnoreCase))
                 {
                     return Esb.ProcessingStatus.Ignore;
