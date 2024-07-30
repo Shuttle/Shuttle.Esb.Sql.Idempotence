@@ -14,12 +14,11 @@ namespace Shuttle.Esb.Sql.Idempotence
     {
         private readonly string _connectionStringName;
         private readonly IDatabaseContextFactory _databaseContextFactory;
-        private readonly IDatabaseContextService _databaseContextService;
 
         private readonly IDatabaseGateway _databaseGateway;
         private readonly IScriptProvider _scriptProvider;
 
-        public IdempotenceService(IOptionsMonitor<ConnectionStringOptions> connectionStringOptions, IOptions<ServiceBusOptions> serviceBusOptions, IServiceBusConfiguration serviceBusConfiguration, IScriptProvider scriptProvider, IDatabaseContextService databaseContextService, IDatabaseContextFactory databaseContextFactory, IDatabaseGateway databaseGateway)
+        public IdempotenceService(IOptionsMonitor<ConnectionStringOptions> connectionStringOptions, IOptions<ServiceBusOptions> serviceBusOptions, IServiceBusConfiguration serviceBusConfiguration, IScriptProvider scriptProvider, IDatabaseContextFactory databaseContextFactory, IDatabaseGateway databaseGateway)
         {
             Guard.AgainstNull(connectionStringOptions, nameof(connectionStringOptions));
             Guard.AgainstNull(serviceBusOptions, nameof(serviceBusOptions));
@@ -32,13 +31,11 @@ namespace Shuttle.Esb.Sql.Idempotence
             }
 
             _scriptProvider = Guard.AgainstNull(scriptProvider, nameof(scriptProvider));
-            _databaseContextService = Guard.AgainstNull(databaseContextService, nameof(databaseContextService));
             _databaseContextFactory = Guard.AgainstNull(databaseContextFactory, nameof(databaseContextFactory));
             _databaseGateway = Guard.AgainstNull(databaseGateway, nameof(databaseGateway));
 
             _connectionStringName = serviceBusOptions.Value.Idempotence.ConnectionStringName;
 
-            using (_databaseContextService.BeginScope())
             using (var databaseContext = _databaseContextFactory.Create(_connectionStringName))
             using (var transaction = databaseContext.BeginTransaction())
             {
@@ -116,7 +113,6 @@ namespace Shuttle.Esb.Sql.Idempotence
 
         private async ValueTask<bool> AddDeferredMessageAsync(TransportMessage processingTransportMessage, TransportMessage deferredTransportMessage, Stream deferredTransportMessageStream, bool sync)
         {
-            using (_databaseContextService.BeginScope())
             await using (_databaseContextFactory.Create(_connectionStringName))
             {
                 var query = new Query(_scriptProvider.Get(_connectionStringName, Script.IdempotenceSendDeferredMessage))
@@ -139,7 +135,6 @@ namespace Shuttle.Esb.Sql.Idempotence
 
         public async Task DeferredMessageSentAsync(TransportMessage processingTransportMessage, TransportMessage deferredTransportMessage, bool sync)
         {
-            using (_databaseContextService.BeginScope())
             await using (_databaseContextFactory.Create(_connectionStringName))
             {
                 var query = new Query(_scriptProvider.Get(_connectionStringName, Script.IdempotenceDeferredMessageSent))
@@ -160,7 +155,6 @@ namespace Shuttle.Esb.Sql.Idempotence
         {
             var result = new List<Stream>();
 
-            using (_databaseContextService.BeginScope())
             await using (_databaseContextFactory.Create(_connectionStringName))
             {
                 var query = new Query(_scriptProvider.Get(_connectionStringName, Script.IdempotenceGetDeferredMessages))
@@ -181,7 +175,6 @@ namespace Shuttle.Esb.Sql.Idempotence
 
         private async Task MessageHandledAsync(TransportMessage transportMessage, bool sync)
         {
-            using (_databaseContextService.BeginScope())
             await using (_databaseContextFactory.Create(_connectionStringName))
             {
                 var query = new Query(_scriptProvider.Get(_connectionStringName, Script.IdempotenceMessageHandled))
@@ -200,7 +193,6 @@ namespace Shuttle.Esb.Sql.Idempotence
 
         private async Task ProcessingCompletedAsync(TransportMessage transportMessage, bool sync)
         {
-            using (_databaseContextService.BeginScope())
             await using (var databaseContext = _databaseContextFactory.Create(_connectionStringName))
             await using (var transaction = sync ? databaseContext.BeginTransaction() : await databaseContext.BeginTransactionAsync().ConfigureAwait(false))
             {
@@ -226,7 +218,6 @@ namespace Shuttle.Esb.Sql.Idempotence
         {
             try
             {
-                using (_databaseContextService.BeginScope())
                 await using (var databaseContext = _databaseContextFactory.Create(_connectionStringName))
                 await using (var transaction = sync ? databaseContext.BeginTransaction() : await databaseContext.BeginTransactionAsync().ConfigureAwait(false))
                 {
