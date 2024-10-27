@@ -23,16 +23,6 @@ public class IdempotenceTest : IdempotenceFixture
     [TestCase(false, true)]
     [TestCase(true, false)]
     [TestCase(true, true)]
-    public void Should_be_able_to_perform_full_processing(bool isTransactionalEndpoint, bool enqueueUniqueMessages)
-    {
-        TestIdempotenceProcessing(GetServiceCollection(), @"sql://idempotence/{0}", isTransactionalEndpoint, enqueueUniqueMessages);
-    }
-
-    [Test]
-    [TestCase(false, false)]
-    [TestCase(false, true)]
-    [TestCase(true, false)]
-    [TestCase(true, true)]
     public async Task Should_be_able_to_perform_full_processing_async(bool isTransactionalEndpoint, bool enqueueUniqueMessages)
     {
         await TestIdempotenceProcessingAsync(GetServiceCollection(), @"sql://idempotence/{0}", isTransactionalEndpoint, enqueueUniqueMessages);
@@ -50,7 +40,7 @@ public class IdempotenceTest : IdempotenceFixture
 
         services.AddSqlQueue(builder =>
         {
-            builder.AddOptions("idempotence", new SqlQueueOptions
+            builder.AddOptions("idempotence", new()
             {
                 ConnectionStringName = "Idempotence"
             });

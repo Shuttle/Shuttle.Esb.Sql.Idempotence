@@ -1,67 +1,68 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    </PropertyGroup>
+    <nullable>enable</nullable>
+  </PropertyGroup>
 
-    <ItemGroup>
-        <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceComplete.sql" />
-        <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceDeferredMessageSent.sql" />
-        <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceGetDeferredMessages.sql" />
-        <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceHasCompleted.sql" />
-        <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceInitialize.sql" />
-        <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceIsMessageHandled.sql" />
-        <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceIsProcessing.sql" />
-        <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceMessageHandled.sql" />
-        <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceProcessing.sql" />
-        <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceSendDeferredMessage.sql" />
-        <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceServiceExists.sql" />
-        <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceComplete.sql" />
-        <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceDeferredMessageSent.sql" />
-        <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceGetDeferredMessages.sql" />
-        <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceHasCompleted.sql" />
-        <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceInitialize.sql" />
-        <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceIsMessageHandled.sql" />
-        <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceIsProcessing.sql" />
-        <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceMessageHandled.sql" />
-        <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceProcessing.sql" />
-        <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceSendDeferredMessage.sql" />
-        <Content Include=".scripts\Microsoft.Data.SqlClient\IdempotenceServiceCreate.sql">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Content>
-        <Content Include=".scripts\System.Data.SqlClient\IdempotenceServiceCreate.sql">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Content>
-        <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceServiceExists.sql" />
-    </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceComplete.sql" />
+    <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceDeferredMessageSent.sql" />
+    <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceGetDeferredMessages.sql" />
+    <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceHasCompleted.sql" />
+    <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceInitialize.sql" />
+    <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceIsMessageHandled.sql" />
+    <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceIsProcessing.sql" />
+    <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceMessageHandled.sql" />
+    <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceProcessing.sql" />
+    <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceSendDeferredMessage.sql" />
+    <EmbeddedResource Include=".scripts\Microsoft.Data.SqlClient\IdempotenceServiceExists.sql" />
+    <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceComplete.sql" />
+    <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceDeferredMessageSent.sql" />
+    <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceGetDeferredMessages.sql" />
+    <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceHasCompleted.sql" />
+    <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceInitialize.sql" />
+    <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceIsMessageHandled.sql" />
+    <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceIsProcessing.sql" />
+    <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceMessageHandled.sql" />
+    <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceProcessing.sql" />
+    <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceSendDeferredMessage.sql" />
+    <Content Include=".scripts\Microsoft.Data.SqlClient\IdempotenceServiceCreate.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include=".scripts\System.Data.SqlClient\IdempotenceServiceCreate.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <EmbeddedResource Include=".scripts\System.Data.SqlClient\IdempotenceServiceExists.sql" />
+  </ItemGroup>
 
-    <ItemGroup>
-        <PackageReference Include="Shuttle.Core.Data" Version="17.0.0" />
-        <PackageReference Include="Shuttle.Esb" Version="15.0.0" />
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Shuttle.Core.Data" Version="20.0.0" />
+    <PackageReference Include="Shuttle.Esb" Version="20.0.0" />
+  </ItemGroup>
 
-    <ItemGroup>
-        <None Include=".package\AssemblyInfo.cs.template" />
-        <None Include=".package\package.msbuild" />
-        <None Include=".package\package.nuspec.template" />
-        <None Include=".package\Shuttle.NuGetPackager.MSBuild.dll" />
-        <None Include=".package\Shuttle.NuGetPackager.targets" />
-    </ItemGroup>
+  <ItemGroup>
+    <None Include=".package\AssemblyInfo.cs.template" />
+    <None Include=".package\package.msbuild" />
+    <None Include=".package\package.nuspec.template" />
+    <None Include=".package\Shuttle.NuGetPackager.MSBuild.dll" />
+    <None Include=".package\Shuttle.NuGetPackager.targets" />
+  </ItemGroup>
 
-    <ItemGroup>
-      <Compile Update="Resources.Designer.cs">
-        <DesignTime>True</DesignTime>
-        <AutoGen>True</AutoGen>
-        <DependentUpon>Resources.resx</DependentUpon>
-      </Compile>
-    </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
 
-    <ItemGroup>
-      <EmbeddedResource Update="Resources.resx">
-        <Generator>PublicResXFileCodeGenerator</Generator>
-        <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-      </EmbeddedResource>
-    </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="Resources.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
 
 </Project>
