@@ -31,6 +31,7 @@ public class IdempotenceService : IIdempotenceService
 
         _connectionStringName = serviceBusOptions.Value.Idempotence.ConnectionStringName;
 
+        using (new DatabaseContextScope())
         using (var databaseContext = _databaseContextFactory.Create(_connectionStringName))
         using (var transaction = databaseContext.BeginTransactionAsync().GetAwaiter().GetResult())
         {
@@ -49,6 +50,7 @@ public class IdempotenceService : IIdempotenceService
 
     public async ValueTask<bool> AddDeferredMessageAsync(TransportMessage processingTransportMessage, TransportMessage deferredTransportMessage, Stream deferredTransportMessageStream)
     {
+        using (new DatabaseContextScope())
         await using (var databaseContext = _databaseContextFactory.Create(_connectionStringName))
         await using (var transaction = await databaseContext.BeginTransactionAsync().ConfigureAwait(false))
         {
@@ -67,6 +69,7 @@ public class IdempotenceService : IIdempotenceService
 
     public async Task DeferredMessageSentAsync(TransportMessage processingTransportMessage, TransportMessage deferredTransportMessage)
     {
+        using (new DatabaseContextScope())
         await using (var databaseContext = _databaseContextFactory.Create(_connectionStringName))
         await using (var transaction = await databaseContext.BeginTransactionAsync().ConfigureAwait(false))
         {
@@ -83,6 +86,7 @@ public class IdempotenceService : IIdempotenceService
     {
         var result = new List<Stream>();
 
+        using (new DatabaseContextScope())
         await using (var databaseContext = _databaseContextFactory.Create(_connectionStringName))
         await using (var transaction = await databaseContext.BeginTransactionAsync().ConfigureAwait(false))
         {
@@ -104,6 +108,7 @@ public class IdempotenceService : IIdempotenceService
 
     public async Task MessageHandledAsync(TransportMessage transportMessage)
     {
+        using (new DatabaseContextScope())
         await using (var databaseContext = _databaseContextFactory.Create(_connectionStringName))
         await using (var transaction = await databaseContext.BeginTransactionAsync().ConfigureAwait(false))
         {
@@ -118,6 +123,7 @@ public class IdempotenceService : IIdempotenceService
 
     public async Task ProcessingCompletedAsync(TransportMessage transportMessage)
     {
+        using (new DatabaseContextScope())
         await using (var databaseContext = _databaseContextFactory.Create(_connectionStringName))
         await using (var transaction = await databaseContext.BeginTransactionAsync().ConfigureAwait(false))
         {
@@ -136,6 +142,7 @@ public class IdempotenceService : IIdempotenceService
 
         try
         {
+            using (new DatabaseContextScope())
             await using (var databaseContext = _databaseContextFactory.Create(_connectionStringName))
             await using (var transaction = await databaseContext.BeginTransactionAsync().ConfigureAwait(false))
             {
