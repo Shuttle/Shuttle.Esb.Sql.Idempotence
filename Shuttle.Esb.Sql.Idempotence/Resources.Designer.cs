@@ -19,7 +19,7 @@ namespace Shuttle.Esb.Sql.Idempotence {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -75,6 +75,15 @@ namespace Shuttle.Esb.Sql.Idempotence {
         public static string ConnectionStringMissing {
             get {
                 return ResourceManager.GetString("ConnectionStringMissing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Option &apos;ConnectionString&apos; may not be empty..
+        /// </summary>
+        public static string ConnectionStringOptionException {
+            get {
+                return ResourceManager.GetString("ConnectionStringOptionException", resourceCulture);
             }
         }
         
@@ -264,6 +273,15 @@ namespace Shuttle.Esb.Sql.Idempotence {
         public static string RemoveError {
             get {
                 return ResourceManager.GetString("RemoveError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Option &apos;Schema&apos; may not be empty..
+        /// </summary>
+        public static string SchemaOptionException {
+            get {
+                return ResourceManager.GetString("SchemaOptionException", resourceCulture);
             }
         }
         

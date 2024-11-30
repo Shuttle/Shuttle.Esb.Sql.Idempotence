@@ -42,11 +42,20 @@ public class IdempotenceTest : IdempotenceFixture
         {
             builder.AddOptions("idempotence", new()
             {
+                Schema = "Idempotence",
                 ConnectionStringName = "Idempotence"
             });
+
+            builder.UseSqlServer();
         });
 
-        services.AddSqlIdempotence();
+        services.AddSqlIdempotence(builder =>
+        {
+            builder.Options.Schema = "Idempotence";
+            builder.Options.ConnectionStringName = "Idempotence";
+
+            builder.UseSqlServer();
+        });
 
         return services;
     }
