@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Shuttle.Core.Contract;
+using Shuttle.Esb.Idempotence;
 
 namespace Shuttle.Esb.Sql.Idempotence;
 
@@ -14,18 +15,16 @@ public static class ServiceCollectionExtensions
 
         builder?.Invoke(sqlIdempotenceBuilder);
 
-        services.AddSingleton<IValidateOptions<SqlIdempotenceOptions>, SqlIdempotenceOptionsValidator>();
-
         services.AddOptions<SqlIdempotenceOptions>().Configure(options =>
         {
             options.ConnectionStringName = sqlIdempotenceBuilder.Options.ConnectionStringName;
             options.Schema = sqlIdempotenceBuilder.Options.Schema;
         });
 
-        services.AddSingleton<IIdempotenceService, IdempotenceService>();
-        services.AddSingleton<IdempotenceObserver>();
-        services.AddSingleton<IHostedService, IdempotenceHostedService>();
-
-        return services;
+        return services
+            .AddSingleton<IValidateOptions<SqlIdempotenceOptions>, SqlIdempotenceOptionsValidator>()
+            .AddSingleton<IdempotenceObserver>()
+            .AddSingleton<IIdempotenceService, IdempotenceService>()
+            .AddSingleton<IHostedService, IdempotenceHostedService>();
     }
 }

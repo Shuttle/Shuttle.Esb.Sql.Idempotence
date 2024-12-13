@@ -34,7 +34,6 @@ public class IdempotenceObserver : IPipelineObserver<OnStarted>
         await using (var databaseContext = await _databaseContextFactory.Create(_sqlIdempotenceOptions.ConnectionStringName).BeginTransactionAsync())
         {
             await databaseContext.ExecuteAsync(_queryFactory.Create());
-            await databaseContext.ExecuteAsync(_queryFactory.Initialize(_serviceBusConfiguration.Inbox!.WorkQueue!.Uri.ToString()));
             await databaseContext.CommitTransactionAsync();
         }
     }

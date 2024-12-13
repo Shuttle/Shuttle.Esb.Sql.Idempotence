@@ -3,12 +3,13 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <nullable>enable</nullable>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Shuttle.Core.Data" Version="20.0.0" />
     <PackageReference Include="Shuttle.Esb" Version="20.0.0" />
+    <PackageReference Include="Shuttle.Esb.Idempotence" Version="20.0.0" />
   </ItemGroup>
 
   <ItemGroup>
