@@ -18,6 +18,7 @@
 		<dependencies>
       <dependency id="Shuttle.Core.Data" version="20.0.0" />
       <dependency id="Shuttle.Esb" version="20.0.0" />
+      <dependency id="Shuttle.Esb.Idempotence" version="20.0.0" />
 		</dependencies>
 	</metadata>
   <files>

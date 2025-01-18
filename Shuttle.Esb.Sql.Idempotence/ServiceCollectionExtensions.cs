@@ -15,11 +15,7 @@ public static class ServiceCollectionExtensions
 
         builder?.Invoke(sqlIdempotenceBuilder);
 
-        services.AddOptions<SqlIdempotenceOptions>().Configure(options =>
-        {
-            options.ConnectionStringName = sqlIdempotenceBuilder.Options.ConnectionStringName;
-            options.Schema = sqlIdempotenceBuilder.Options.Schema;
-        });
+        services.AddSingleton(Options.Create(sqlIdempotenceBuilder.Options));
 
         return services
             .AddSingleton<IValidateOptions<SqlIdempotenceOptions>, SqlIdempotenceOptionsValidator>()
