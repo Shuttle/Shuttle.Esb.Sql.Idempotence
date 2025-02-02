@@ -13,7 +13,7 @@
 		<repository type="git" url="https://github.com/Shuttle/Shuttle.Esb.Sql.Idempotence.git" />
 		<projectUrl>https://github.com/Shuttle/Shuttle.Esb.Sql.Idempotence</projectUrl>
 		<description>Sql-based implementation of IIdempotenceService interface for use with Shuttle.Esb.</description>
-		<copyright>Copyright (c) 2024, Eben Roux</copyright>
+		<copyright>Copyright (c) 2025, Eben Roux</copyright>
 		<tags>idempotence</tags>
 		<dependencies>
       <dependency id="Shuttle.Core.Data" version="20.0.0" />
