@@ -4,6 +4,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Shuttle.Core.Data;
+using Shuttle.Esb.Idempotence;
 
 namespace Shuttle.Esb.Sql.Idempotence.Tests;
 
